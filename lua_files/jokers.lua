@@ -4716,6 +4716,7 @@ bunnyhop.calculate = function(self, card, context)
 			end
 		end
 		return {
+			delay = 0.2,
 			message = localize('k_upgrade_ex'),
 			card = card,
 			colour = G.C.CHIPS
