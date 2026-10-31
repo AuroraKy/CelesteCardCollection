@@ -30,18 +30,24 @@ granny.calculate = function(self, card, context)
 		card.ability.extra.discarded.amount = #context.full_hand
 	end
 
-	if context.drawing_cards then--and (G.GAME.ccc_after_discard and G.GAME.ccc_after_discard > 0) and #G.deck.cards > 0 then
+	if context.hand_drawn then--and (G.GAME.ccc_after_discard and G.GAME.ccc_after_discard > 0) and #G.deck.cards > 0 then
 
 		-- don't try to draw more cards than you have (doesn't crash but would give you incorrect status text)
-		local draw = math.min(card.ability.extra.discarded.amount, #G.deck.cards - context.amount) 
+		local draw = math.min(card.ability.extra.discarded.amount, #G.deck.cards) 
 		if draw == 0 then return nil end
 		card.ability.extra.discarded.amount = 0
-		return {
-			message = localize { type = 'variable', key = draw ~= 1 and 'ccc_a_cards' or 'ccc_a_card', vars = { draw } }, 
-			colour = G.C.FILTER,
-			cards_to_draw = context.amount + draw
-		}
 
+		local _card = context.blueprint_card or card
+
+		G.E_MANAGER:add_event(Event({trigger = 'after', func = function()
+			card_eval_status_text(
+				_card, 'extra', nil, nil, nil, {
+					message = localize { type = 'variable', key = draw ~= 1 and 'ccc_a_cards' or 'ccc_a_card', vars = { draw } }, 
+					colour = G.C.FILTER 
+				}
+			)
+			SMODS.draw_cards(draw)
+		return true end }))
 	end
 
 	--[[
