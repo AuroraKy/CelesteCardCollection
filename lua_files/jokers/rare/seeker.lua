@@ -157,6 +157,16 @@ seeker.calculate = function(self, card, context)
 					return true
 				end
 			}))
+		else -- hand is all right, so end early
+			G.E_MANAGER:add_event(Event({
+				func = function()
+					G.GAME.ccc_seeker_block = false;
+					for key, seeker in pairs(SMODS.find_card(card.config.center_key), true) do
+						seeker.ability.extra.triggered = false
+					end
+					return true 
+				end
+			}))
 		end
 	end
 end
