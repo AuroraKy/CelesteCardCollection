@@ -20,23 +20,33 @@ local feather = {
 
 feather.calculate = function(self, card, context)
 
-        if context.ccc_drawfromdeck then
-		if not context.blueprint then
-                	card.ability.extra.xmult = card.ability.extra.xmult+(card.ability.extra.mult_scale*context.ccc_amount)
-		end
+    if context.hand_drawn and not context.blueprint then
+		-- card.ability.extra.xmult = card.ability.extra.xmult + (card.ability.extra.mult_scale * #context.hand_drawn)
+		SMODS.scale_card(card, {
+			ref_table = card.ability.extra,
+            ref_value = "xmult",
+			scalar_value = "mult_scale",
+			scalar_factor = #context.hand_drawn,
+			message_key = "a_xmult",
+			message_colour = G.C.RED
+		})
 	end
 	
-        if context.joker_main then
+    if context.joker_main then
 		return {
-			message = localize{type='variable',key='a_xmult',vars={card.ability.extra.xmult}},
-			Xmult_mod = card.ability.extra.xmult, 
-			colour = G.C.MULT
+			xmult = card.ability.extra.xmult, 
 		}
-        end
+    end
 	
 	if context.end_of_round and not context.blueprint and not context.repetition and not context.individual then
-		card.ability.extra.xmult = 1
-		card_eval_status_text(card, 'extra', nil, nil, nil, {message = localize('k_ccc_reset'), colour = G.C.FILTER})
+		-- card.ability.extra.xmult = 1
+		-- card_eval_status_text(card, 'extra', nil, nil, nil, {message = localize('k_ccc_reset'), colour = G.C.FILTER})
+		SMODS.reset_card(card, {
+            ref_table = card.ability.extra,
+            ref_value = 'xmult',
+            reset_value = 1,
+            message_colour = G.C.FILTER
+        })
 	end
 end
 

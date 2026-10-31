@@ -1,6 +1,7 @@
 
 
--- Used by seeker and feather
+-- Used by seeker and feather (no more, see context.hand_drawn and context.other_drawn)
+--[[
 local drawcardref = G.FUNCS.draw_from_deck_to_hand
 G.FUNCS.draw_from_deck_to_hand = function(e)
 	local hand_space = e or math.min(#G.deck.cards, G.hand.config.card_limit - #G.hand.cards)
@@ -13,6 +14,7 @@ G.FUNCS.draw_from_deck_to_hand = function(e)
 	SMODS.calculate_context({ ccc_drawfromdeck = true, ccc_amount = hand_space })
 	drawcardref(e)
 end
+]]
 
 --[[ region Shattersong
 
