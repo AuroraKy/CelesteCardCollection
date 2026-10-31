@@ -4,7 +4,7 @@
 local seeker = {
 	name = "ccc_Seeker",
 	key = "seeker",
-	config = { extra = { suit = "Hearts", rank = "Ace" } },
+	config = { extra = { suit = "Hearts", rank = "Ace", triggered = false} },
 	pos = { x = 6, y = 4 },
 	rarity = 3,
 	cost = 10,
@@ -50,8 +50,10 @@ seeker.get_common_suit_and_ranks = function(card)
 		return
 	end
 	for index, card in ipairs(G.playing_cards) do
-		if card.ability.effect ~= 'Stone Card' then
+		if not SMODS.has_no_rank(card) then
 			ranks[card.base.value] = (ranks[card.base.value] or 0) + 1
+		end
+		if not SMODS.has_no_suit(card) then
 			suits[card.base.suit] = (suits[card.base.suit] or 0) + 1
 		end
 	end
@@ -91,47 +93,81 @@ end
 seeker.calculate = function(self, card, context)
 	seeker.get_common_suit_and_ranks(card)                                                     -- could possibly just put this function into Card:update instead of calling it frequently? similar to secret shrine
 
-	if context.ccc_drawfromdeck and not context.blueprint and not GLOBAL_seeker_proc == true then -- custom context created in lovely
-		GLOBAL_seeker_proc = true
+	local drawn_cards = (context.hand_drawn or context.other_drawn)
+
+	if context.pre_discard or context.before then -- if for some reason the block persisted, before a hand/discard is a safe place to reset it
+		G.GAME.ccc_seeker_block = false
+	end
+	
+	if drawn_cards and not context.blueprint and not G.GAME.ccc_seeker_block and not card.ability.extra.triggered then -- custom context created in lovely
 
 		local card_pos = {}
 		local card_redraw_candidates = {}
 		G.deck:shuffle('see' .. G.GAME.round_resets.ante) -- shuffle is early, otherwise card drawing gets messed up
-		hand_size = context.ccc_amount
-		for i = 1, hand_size do
-			local future_card = G.deck.cards
-			[(#G.deck.cards - (i - 1))]                        -- end of G.deck.cards currently has the cards that are about to be drawn
-			local ranks = { "", "2", "3", "4", "5", "6", "7", "8", "9", "10", "Jack", "Queen", "King", "Ace" }
-			local future_card_rank = ranks[future_card:get_id()] or "0"
-			local stay_flipped = G.GAME and G.GAME.blind and
-			G.GAME.blind:stay_flipped(G.hand, G.deck.cards[(#G.deck.cards - (i - 1))])
-			if ((not (future_card_rank == G.GAME.pool_flags.seeker_table.rank or future_card:is_suit(G.GAME.pool_flags.seeker_table.suit, true)))
-					or (future_card.ability.name == 'Stone Card')) and (not stay_flipped == true) then
-				card_redraw_candidates[#card_redraw_candidates + 1] = future_card
+		hand_size = #drawn_cards
+		for k, card_drawn in pairs(drawn_cards) do
+			if ((not (card_drawn.base.value == G.GAME.pool_flags.seeker_table.rank or card_drawn:is_suit(G.GAME.pool_flags.seeker_table.suit, true)))
+					or (SMODS.has_no_suit(card_drawn) or SMODS.has_no_rank(card_drawn))) and (card_drawn.facing ~= 'back') then
+				card_redraw_candidates[#card_redraw_candidates + 1] = card_drawn
 				card_pos[#card_pos + 1] = i
 			end
 		end
 		if #card_redraw_candidates > 0 then
+			G.GAME.ccc_seeker_block = true -- this is an immediate blocker, so other seekers don't try to evaluate the same draw
 			G.E_MANAGER:add_event(Event({
-				trigger = "after",
 				func = function()
 					card_eval_status_text(card, 'extra', nil, nil, nil, { message = localize('k_ccc_redraw'), colour = G.C.FILTER })
 					local hand_count = #card_redraw_candidates
 					for i = 1, hand_count do
 						draw_card(G.hand, G.deck, i * 100 / hand_count, 'down', nil, card_redraw_candidates[i], 0.08)
 					end
-					G.FUNCS.draw_from_deck_to_hand(hand_count)
+					G.GAME.ccc_seeker_block = false -- what should happen is seekers will evaluate the card drawn by this seeker 
+					card.ability.extra.triggered = true -- except of course, the seeker itself
+					--recursion happens here, but you're so triggered it won't happen again
+					SMODS.draw_cards(hand_count)
+					G.E_MANAGER:add_event(Event({
+						func = function()
+							-- seekers get triggered one by one until all of them are triggered, i.e. the complete evaluation is done, then we know we can untrigger them all for next time something is drawn
+							local this_evaluation_done = true
+							for key, seeker in pairs(SMODS.find_card(card.config.center_key), true) do
+								if not seeker.ability.extra.triggered then
+									this_evaluation_done = false
+									break
+								end
+							end
+
+							if this_evaluation_done then
+								--need to add an event here, otherwise this would run *before* the events created by SMODS.draw_cards and create a loop
+								G.E_MANAGER:add_event(Event({
+									func = function()
+										G.GAME.ccc_seeker_block = false;
+										for key, seeker in pairs(SMODS.find_card(card.config.center_key), true) do
+											seeker.ability.extra.triggered = false
+										end
+										return true 
+									end
+								}))
+							end
+
+							G.GAME.ccc_seeker_block = false; 
+							return true 
+						end
+					}))
+					
 					return true
 				end
 			}))
+		else -- hand is all right, so end early
+			G.E_MANAGER:add_event(Event({
+				func = function()
+					G.GAME.ccc_seeker_block = false;
+					for key, seeker in pairs(SMODS.find_card(card.config.center_key), true) do
+						seeker.ability.extra.triggered = false
+					end
+					return true 
+				end
+			}))
 		end
-		G.E_MANAGER:add_event(Event({
-			trigger = "after",
-			func = function()
-				GLOBAL_seeker_proc = false
-				return true
-			end
-		}))
 	end
 end
 
