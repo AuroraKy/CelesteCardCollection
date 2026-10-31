@@ -31,6 +31,7 @@ return {
 			["ccc_a_ante_minus"] = "-#1# Ante",
 			["ccc_a_discard"] = "+#1# Discard",
 			["ccc_a_cards"] = "+#1# Cards",
+			["ccc_a_card"] = "+#1# Card",
 			["ccc_hardlist_star"] = "#1#-Star!",
 		},
 		["labels"] = {

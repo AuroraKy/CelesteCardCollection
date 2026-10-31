@@ -37,7 +37,7 @@ granny.calculate = function(self, card, context)
 		if draw == 0 then return nil end
 		card.ability.extra.discarded.amount = 0
 		return {
-			message = localize { type = 'variable', key = 'ccc_a_cards', vars = { draw } }, 
+			message = localize { type = 'variable', key = draw ~= 1 and 'ccc_a_cards' or 'ccc_a_card', vars = { draw } }, 
 			colour = G.C.FILTER,
 			cards_to_draw = context.amount + draw
 		}
