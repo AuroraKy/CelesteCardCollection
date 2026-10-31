@@ -2,7 +2,7 @@
 local granny = {
 	name = "ccc_Granny",
 	key = "granny",
-	config = {extra = {draw = 1, discarded = 0}},
+	config = {extra = {draw = 1, discarded = {amount = 0}}},
 	pos = {x = 2, y = 5},
 	soul_pos = {x = 2, y = 6},
 	rarity = 4,
@@ -21,20 +21,21 @@ local granny = {
 }
 
 granny.calculate = function(self, card, context)
+	card.ability.extra.discarded = card.ability.extra.discarded or {amount = 0}
 	if context.setting_blind then -- prevent carrying over discards from other rounds (only really possible by playing a winning hand during The Hook)
-		card.ability.extra.discarded = 0
+		card.ability.extra.discarded.amount = 0
 	end
 
 	if context.discard and not context.blueprint then
-		card.ability.extra.discarded = #context.full_hand
+		card.ability.extra.discarded.amount = #context.full_hand
 	end
 
 	if context.drawing_cards then--and (G.GAME.ccc_after_discard and G.GAME.ccc_after_discard > 0) and #G.deck.cards > 0 then
 
 		-- don't try to draw more cards than you have (doesn't crash but would give you incorrect status text)
-		local draw = math.min(card.ability.extra.discarded, #G.deck.cards - context.amount) 
+		local draw = math.min(card.ability.extra.discarded.amount, #G.deck.cards - context.amount) 
 		if draw == 0 then return nil end
-		card.ability.extra.discarded = 0
+		card.ability.extra.discarded.amount = 0
 		return {
 			message = localize { type = 'variable', key = 'ccc_a_cards', vars = { draw } }, 
 			colour = G.C.FILTER,
