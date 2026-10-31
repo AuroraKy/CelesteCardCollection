@@ -27,8 +27,9 @@ feather.calculate = function(self, card, context)
             ref_value = "xmult",
 			scalar_value = "mult_scale",
 			scalar_factor = #context.hand_drawn,
-			message_key = "a_xmult",
-			message_colour = G.C.RED
+			no_message = true,
+			--message_key = "a_xmult",
+			--message_colour = G.C.RED
 		})
 	end
 	
